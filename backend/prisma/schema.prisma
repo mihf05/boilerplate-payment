@@ -8,87 +8,109 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id             String    @id @default(uuid())
-  email          String    @unique
-  name           String?
-  password       String
-  role           Role      @default(USER)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  tenantId       String?
-  tenant         Tenant?   @relation(fields: [tenantId], references: [id])
-  invoices       Invoice[]
-}
-
 model Tenant {
-  id             String    @id @default(uuid())
-  name           String
-  domain         String    @unique
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  users          User[]
-  invoices       Invoice[]
-  payments       Payment[]
+  id          String     @id @default(uuid())
+  name        String
+  email       String     @unique
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  users       User[]
+  payments    Payment[]
+  invoices    Invoice[]
+
+  SMSLog SMSLog[]
+
+  EmailLog EmailLog[]
 }
 
-model Invoice {
-  id             String    @id @default(uuid())
-  number         String    @unique
-  amount         Float
-  currency       String
-  status         InvoiceStatus @default(PENDING)
-  dueDate        DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  userId         String
-  user           User      @relation(fields: [userId], references: [id])
-  tenantId       String
-  tenant         Tenant    @relation(fields: [tenantId], references: [id])
-  payments       Payment[]
-}
+model User {
+  id          String     @id @default(uuid())
+  email       String     @unique
+  password    String
+  name        String
+  role        Role       @default(USER)
+  tenantId    String
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-model Payment {
-  id             String    @id @default(uuid())
-  amount         Float
-  currency       String
-  status         PaymentStatus @default(PENDING)
-  paymentMethod  String
-  paymentDetails Json?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  invoiceId      String
-  invoice        Invoice   @relation(fields: [invoiceId], references: [id])
-  tenantId       String
-  tenant         Tenant    @relation(fields: [tenantId], references: [id])
-}
-
-model Currency {
-  code           String    @id
-  name           String
-  symbol         String
-  exchangeRate   Float     @default(1.0)
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  Invoice Invoice[]
 }
 
 enum Role {
-  USER
   ADMIN
-  SUPER_ADMIN
+  USER
 }
 
-enum InvoiceStatus {
-  PENDING
-  PAID
-  OVERDUE
-  CANCELLED
+model Payment {
+  id            String     @id @default(uuid())
+  tenantId      String
+  amount        Float
+  currency      String
+  provider      String
+  status        PaymentStatus
+  transactionId String     @unique
+  metadata      Json?
+  createdAt     DateTime   @default(now())
+
+  tenant        Tenant     @relation(fields: [tenantId], references: [id])
+  invoice       Invoice?
 }
 
 enum PaymentStatus {
   PENDING
-  COMPLETED
+  SUCCESS
   FAILED
   REFUNDED
+}
+
+model Invoice {
+  id          String     @id @default(uuid())
+  tenantId    String
+  paymentId   String? @unique
+  userId      String
+  amount      Float
+  status      InvoiceStatus
+  dueDate     DateTime
+  issuedAt    DateTime   @default(now())
+  paidAt      DateTime?
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+  payment     Payment?   @relation(fields: [paymentId], references: [id])
+  user        User       @relation(fields: [userId], references: [id])
+}
+
+enum InvoiceStatus {
+  UNPAID
+  PAID
+  OVERDUE
+}
+
+model EmailLog {
+  id          String     @id @default(uuid())
+  tenantId    String
+  to          String
+  subject     String
+  body        String
+  sentAt      DateTime   @default(now())
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+}
+
+model SMSLog {
+  id          String     @id @default(uuid())
+  tenantId    String
+  to          String
+  message     String
+  sentAt      DateTime   @default(now())
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id])
+}
+
+model CurrencyRate {
+  id          String     @id @default(uuid())
+  base        String
+  target      String
+  rate        Float
+  updatedAt   DateTime   @default(now())
 }

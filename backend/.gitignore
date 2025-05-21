@@ -1,0 +1,36 @@
+# Node modules
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment
+.env
+.env.*.local
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.sqlite
+prisma/*.log
+prisma/migrations/
+
+# TypeScript
+*.tsbuildinfo
+
+# Docker
+docker-compose.override.yml
+
+# Misc
+*.swp
+.DS_Store
+.idea/
+.vscode/

@@ -5,22 +5,18 @@ import * as bcrypt from 'bcrypt';
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
-
-  async findAll(tenantId: string) {
+  async findAll() {
     return this.prisma.user.findMany({
-      where: { tenantId },
       select: {
         id: true,
         email: true,
         name: true,
         role: true,
-        tenantId: true,
         createdAt: true,
         updatedAt: true,
       },
     });
   }
-
   async findOne(id: string) {
     const user = await this.prisma.user.findUnique({
       where: { id },
@@ -29,15 +25,8 @@ export class UsersService {
         email: true,
         name: true,
         role: true,
-        tenantId: true,
         createdAt: true,
         updatedAt: true,
-        tenant: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
       },
     });
 
@@ -53,7 +42,6 @@ export class UsersService {
       where: { email },
     });
   }
-
   async update(id: string, updateUserDto: any) {
     const { password, ...data } = updateUserDto;
 
@@ -71,7 +59,6 @@ export class UsersService {
         email: true,
         name: true,
         role: true,
-        tenantId: true,
         createdAt: true,
         updatedAt: true,
       },

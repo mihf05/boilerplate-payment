@@ -22,8 +22,7 @@ export class EmailService {
       },
     });
   }
-
-  async sendEmail(tenantId: string, to: string, subject: string, html: string) {
+  async sendEmail(to: string, subject: string, html: string) {
     try {
       const result = await this.transporter.sendMail({
         from: this.configService.get('EMAIL_FROM') || '"Payment App" <noreply@example.com>',
@@ -35,7 +34,6 @@ export class EmailService {
       // Log the email to the database
       await this.prisma.emailLog.create({
         data: {
-          tenantId,
           to,
           subject,
           body: html,
@@ -48,8 +46,7 @@ export class EmailService {
       throw error;
     }
   }
-
-  async sendVerificationEmail(tenantId: string, to: string, token: string) {
+  async sendVerificationEmail(to: string, token: string) {
     const baseUrl = this.configService.get('APP_URL') || 'http://localhost:3000';
     const verificationLink = `${baseUrl}/auth/verify?token=${token}`;
     
@@ -62,10 +59,9 @@ export class EmailService {
       <p>The link will expire in 24 hours.</p>
     `;
 
-    return this.sendEmail(tenantId, to, subject, html);
+    return this.sendEmail(to, subject, html);
   }
-
-  async sendPasswordResetEmail(tenantId: string, to: string, token: string) {
+  async sendPasswordResetEmail(to: string, token: string) {
     const baseUrl = this.configService.get('APP_URL') || 'http://localhost:3000';
     const resetLink = `${baseUrl}/auth/reset-password?token=${token}`;
     
@@ -78,10 +74,9 @@ export class EmailService {
       <p>The link will expire in 1 hour.</p>
     `;
 
-    return this.sendEmail(tenantId, to, subject, html);
+    return this.sendEmail(to, subject, html);
   }
-
-  async sendWelcomeEmail(tenantId: string, to: string, name: string) {
+  async sendWelcomeEmail(to: string, name: string) {
     const subject = 'Welcome to Payment App';
     const html = `
       <h1>Welcome to Payment App, ${name}!</h1>
@@ -95,6 +90,6 @@ export class EmailService {
       <p>If you have any questions, please don't hesitate to contact our support team.</p>
     `;
 
-    return this.sendEmail(tenantId, to, subject, html);
+    return this.sendEmail(to, subject, html);
   }
 }

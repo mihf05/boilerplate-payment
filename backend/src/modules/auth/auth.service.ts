@@ -12,7 +12,6 @@ interface SignupDto {
   email: string;
   password: string;
   name: string;
-  tenantId: string;
 }
 
 interface LoginDto {
@@ -42,9 +41,8 @@ export class AuthService {
     private emailService: EmailService,
     private redisService: RedisService,
   ) {}
-
   async signup(signupDto: SignupDto) {
-    const { email, password, name, tenantId } = signupDto;
+    const { email, password, name } = signupDto;
 
     // Check if user exists
     const existingUser = await this.prisma.user.findUnique({
@@ -53,15 +51,6 @@ export class AuthService {
 
     if (existingUser) {
       throw new ConflictException('Email already in use');
-    }
-
-    // Check if tenant exists
-    const tenant = await this.prisma.tenant.findUnique({
-      where: { id: tenantId },
-    });
-
-    if (!tenant) {
-      throw new NotFoundException('Tenant not found');
     }
 
     // Hash password
@@ -73,7 +62,6 @@ export class AuthService {
         email,
         password: hashedPassword,
         name,
-        tenantId,
       },
     });
 
@@ -89,20 +77,18 @@ export class AuthService {
     );
 
     // Send verification email
-    await this.emailService.sendVerificationEmail(tenantId, email, verificationToken);
+    await this.emailService.sendVerificationEmail(email, verificationToken);
 
     return {
       message: 'User registered successfully. Please check your email to verify your account.',
     };
   }
-
   async login(loginDto: LoginDto) {
     const { email, password } = loginDto;
 
     // Find user
     const user = await this.prisma.user.findUnique({
       where: { email },
-      include: { tenant: true },
     });
 
     if (!user) {
@@ -138,13 +124,10 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
-        tenantId: user.tenantId,
-        tenantName: user.tenant.name,
       },
       ...tokens,
     };
   }
-
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {
     const { token } = verifyEmailDto;
 
@@ -181,7 +164,7 @@ export class AuthService {
 
       if (user) {
         // Send welcome email
-        await this.emailService.sendWelcomeEmail(user.tenantId, user.email, user.name);
+        await this.emailService.sendWelcomeEmail(user.email, user.name);
       }
 
       return { message: 'Email verified successfully' };
@@ -189,7 +172,6 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired token');
     }
   }
-
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const { email } = forgotPasswordDto;
 
@@ -214,7 +196,7 @@ export class AuthService {
     );
 
     // Send password reset email
-    await this.emailService.sendPasswordResetEmail(user.tenantId, email, resetToken);
+    await this.emailService.sendPasswordResetEmail(email, resetToken);
 
     return {
       message: 'Password reset instructions sent to your email',
@@ -313,11 +295,9 @@ export class AuthService {
       throw new UnauthorizedException('Invalid token');
     }
   }
-
   async validateUser(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      include: { tenant: true },
     });
 
     if (!user) {
@@ -329,8 +309,6 @@ export class AuthService {
       email: user.email,
       name: user.name,
       role: user.role,
-      tenantId: user.tenantId,
-      tenantName: user.tenant.name,
     };
   }
 

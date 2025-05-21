@@ -1,9 +1,94 @@
 generator client {
   provider = "prisma-client-js"
-  output = "../node_modules/.prisma/client"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  name           String?
+  password       String
+  role           Role      @default(USER)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  tenantId       String?
+  tenant         Tenant?   @relation(fields: [tenantId], references: [id])
+  invoices       Invoice[]
+}
+
+model Tenant {
+  id             String    @id @default(uuid())
+  name           String
+  domain         String    @unique
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  users          User[]
+  invoices       Invoice[]
+  payments       Payment[]
+}
+
+model Invoice {
+  id             String    @id @default(uuid())
+  number         String    @unique
+  amount         Float
+  currency       String
+  status         InvoiceStatus @default(PENDING)
+  dueDate        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  userId         String
+  user           User      @relation(fields: [userId], references: [id])
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+  payments       Payment[]
+}
+
+model Payment {
+  id             String    @id @default(uuid())
+  amount         Float
+  currency       String
+  status         PaymentStatus @default(PENDING)
+  paymentMethod  String
+  paymentDetails Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  invoiceId      String
+  invoice        Invoice   @relation(fields: [invoiceId], references: [id])
+  tenantId       String
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+}
+
+model Currency {
+  code           String    @id
+  name           String
+  symbol         String
+  exchangeRate   Float     @default(1.0)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
 }
